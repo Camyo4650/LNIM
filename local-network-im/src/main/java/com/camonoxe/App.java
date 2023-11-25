@@ -13,10 +13,11 @@ import org.glassfish.tyrus.server.Server;
 import com.camonoxe.Controller.ChatEndpoint;
 import com.camonoxe.Controller.MulticastListener;
 import com.camonoxe.Model.SendMessageDel;
+import com.camonoxe.Model.SyncDel;
 import com.camonoxe.Model.UserTable;
 import com.camonoxe.View.GUI;
 
-public class App implements Runnable, SendMessageDel {
+public class App implements Runnable, SendMessageDel, SyncDel {
     private GUI gui;
 
     private Server server;
@@ -26,7 +27,7 @@ public class App implements Runnable, SendMessageDel {
     {
         port = findAvailablePort(8080, 20);
         String name = "Session" + (port - 8080 + 1);
-        gui = new GUI(name, this);
+        gui = new GUI(name, this, this);
         UserTable.setUsersChangedDel(gui, gui);
         UserTable.initLocalUser(name, UUID.randomUUID(), port);
     }
@@ -63,7 +64,7 @@ public class App implements Runnable, SendMessageDel {
     }
 
     public void runServer() {
-        server = new Server(null, port, null, null, ChatEndpoint.class);
+        server = new Server("0.0.0.0", port, null, null, ChatEndpoint.class);
         try {
             server.start();
         } catch (DeploymentException e) {
@@ -90,6 +91,16 @@ public class App implements Runnable, SendMessageDel {
     @Override
     public void MessageHandler(UUID recipientId, String message) {
         UserTable.dialupByUserId(recipientId).SendMessage(recipientId, message);
+    }
+
+    @Override
+    public void refresh() {
+        try {
+            multicastSend();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
 }

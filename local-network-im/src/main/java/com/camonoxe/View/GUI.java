@@ -5,6 +5,8 @@ package com.camonoxe.View;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
@@ -22,6 +24,7 @@ import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -37,6 +40,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.camonoxe.Model.MessageLogs;
 import com.camonoxe.Model.SendMessageDel;
+import com.camonoxe.Model.SyncDel;
 import com.camonoxe.Model.UpdateMessagesDel;
 import com.camonoxe.Model.UserTable;
 import com.camonoxe.Model.UserTable.User;
@@ -48,7 +52,9 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
     private JTextPane uxMessages;
     private JTextArea uxText;
     private KeyAdapter sharedKeyAdapter;
+
     private SendMessageDel sendMessageDel;
+    private SyncDel syncDel;
 
     private UUID userOnDisplay;
 
@@ -56,8 +62,9 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
     
     private static final int CHAT_ROW_LIMIT = 4;
 
-    public GUI(String name, SendMessageDel del) {
+    public GUI(String name, SendMessageDel del, SyncDel del2) {
         sendMessageDel = del;
+        syncDel = del2;
         participantsList = new DefaultListModel<>();
         userOnDisplay = null;
         setTitle(name);
@@ -121,8 +128,6 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
 
         uxMessages = new JTextPane();
         uxMessages.setEditable(false);
-        //uxMessages.setLineWrap(true);
-        //uxMessages.setWrapStyleWord(true);
         uxText.setRows(CHAT_ROW_LIMIT);
         JScrollPane scrollMessages = new JScrollPane(uxMessages);
         rightPanel.add(scrollMessages, BorderLayout.CENTER);
@@ -158,7 +163,17 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");
         JMenu connectMenu = new JMenu("Connect");
+        JMenuItem refresh = new JMenuItem("Sync");
+        refresh.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                syncDel.refresh();
+            }
+            
+        });
         menuBar.add(fileMenu);
+        connectMenu.add(refresh);
         menuBar.add(connectMenu);
         setJMenuBar(menuBar);
         add(panel);
@@ -173,14 +188,12 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
         sendMessageDel.MessageHandler(userOnDisplay, uxText.getText());
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
+                getUserEnvByUserId(userOnDisplay).readMessages();
                 uxText.setText("");
+                uxParticipants.validate();
+                uxParticipants.repaint();
             }
         });
-    }
-
-    public void setDelegates(SendMessageDel sendMessageDel)
-    {
-        this.sendMessageDel = sendMessageDel;
     }
 
     @Override
@@ -220,25 +233,35 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
     }
 
     private void refreshMessageBox(UUID userId) {
-        getUserEnvByUserId(userId).newMessages();
-    }
-
-    @Override
-    public void addUserDel(UUID userId) {
-        UserEnvelope ue = new UserEnvelope(UserTable.getUserByUserId(userId));
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                participantsList.addElement(ue);
+                getUserEnvByUserId(userId).newMessages();
+                uxParticipants.validate();
+                uxParticipants.repaint();
             }
         });
     }
 
     @Override
-    public void remUserDel(UUID userId) {
-        UserEnvelope ue = new UserEnvelope(UserTable.getUserByUserId(userId));
+    public void addUserDel(User user) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
+                UserEnvelope ue = new UserEnvelope(user);
+                participantsList.addElement(ue);
+                uxParticipants.validate();
+                uxParticipants.repaint();
+            }
+        });
+    }
+
+    @Override
+    public void remUserDel(User user) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                UserEnvelope ue = new UserEnvelope(user);
                 participantsList.removeElement(ue);
+                uxParticipants.validate();
+                uxParticipants.repaint();
             }
         });
     }
@@ -271,6 +294,7 @@ class UserEnvelope {
     {
         UserEnvelope ue = (UserEnvelope) other;
         if (ue == null) return false;
+        if (ue.user == null || this.user == null) return false;
         return user.equals(ue.user);
     }
 }

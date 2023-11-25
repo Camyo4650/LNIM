@@ -114,16 +114,15 @@ public class UserTable {
             return;
         }
         sessionToUser.put(session, user);
-        usersChangedDel.addUserDel(user.userId);
+        usersChangedDel.addUserDel(user);
         System.out.println(String.format("JOINED\n\tName:\t%s\n\tSessID:\t%s\n", user.username, session));
     }
 
     public synchronized static void remUser(UUID sessionId)
     {
         User user = sessionToUser.get(sessionId);
-        UUID userId = user.userId;
         System.out.println(String.format("LEFT\n\tName:\t%s\n\tSessID:\t%s\n", user.username, sessionId));
-        usersChangedDel.remUserDel(userId);
+        usersChangedDel.remUserDel(user);
         sessionToPhone.remove(sessionId);
         sessionToUser.remove(sessionId);
     }

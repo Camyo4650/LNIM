@@ -2,7 +2,9 @@ package com.camonoxe.Model;
 
 import java.util.UUID;
 
+import com.camonoxe.Model.UserTable.User;
+
 public interface UsersChangedDel {
-    public void addUserDel(UUID userId);
-    public void remUserDel(UUID userId);
+    public void addUserDel(User user);
+    public void remUserDel(User user);
 }

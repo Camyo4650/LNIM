@@ -22,7 +22,7 @@ public class MulticastListener extends Thread {
             byte[] buf = new byte[24];
             socket = new MulticastSocket(4446);
             SocketAddress socketAddress = new InetSocketAddress("230.0.0.0", 4446);
-            socket.joinGroup(socketAddress, NetworkInterface.getByInetAddress(socket.getLocalAddress()));
+            socket.joinGroup(socketAddress, NetworkInterface.getByName("en0"));
             while (isRunning) {
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);
@@ -30,10 +30,11 @@ public class MulticastListener extends Thread {
                 long high = bb.getLong(), low = bb.getLong();
                 int port = bb.getInt();
                 UUID userId = new UUID(high, low);
-                if (userId == UserTable.localUser().getUserId()) continue;
+                if (userId.compareTo(UserTable.localUser().getUserId()) == 0)
+                    continue;
                 UserTable.Connect(userId, packet.getAddress().getHostAddress(), port);
             }
-            socket.leaveGroup(socketAddress, NetworkInterface.getByInetAddress(socket.getLocalAddress()));
+            socket.leaveGroup(socketAddress, NetworkInterface.getByName("en0"));
             socket.close();
         } catch (Exception e) {
             e.printStackTrace();
