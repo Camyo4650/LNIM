@@ -20,7 +20,7 @@ public class MulticastListener extends Thread {
     {
         try {
             byte[] buf = new byte[24];
-            socket = new MulticastSocket();
+            socket = new MulticastSocket(4446);
             SocketAddress socketAddress = new InetSocketAddress("230.0.0.0", 4446);
             socket.joinGroup(socketAddress, NetworkInterface.getByInetAddress(socket.getLocalAddress()));
             while (isRunning) {
