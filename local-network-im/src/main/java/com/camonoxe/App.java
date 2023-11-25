@@ -5,6 +5,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
@@ -63,10 +64,10 @@ public class App implements Runnable, SendMessageDel {
     }
 
     public void runServer() {
-        server = new Server(null, port, null, null, ChatEndpoint.class);
         try {
+            server = new Server(InetAddress.getLocalHost().getHostAddress(), port, null, null, ChatEndpoint.class);
             server.start();
-        } catch (DeploymentException e) {
+        } catch (DeploymentException | UnknownHostException e) {
             e.printStackTrace();
             return;
         }
