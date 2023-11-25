@@ -63,7 +63,7 @@ public class App implements Runnable, SendMessageDel {
     }
 
     public void runServer() {
-        server = new Server("0.0.0.0", port, null, null, ChatEndpoint.class);
+        server = new Server(null, port, null, null, ChatEndpoint.class);
         try {
             server.start();
         } catch (DeploymentException e) {
