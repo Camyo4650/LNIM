@@ -22,7 +22,7 @@ public class MulticastListener extends Thread {
             byte[] buf = new byte[24];
             socket = new MulticastSocket(4446);
             SocketAddress socketAddress = new InetSocketAddress("230.0.0.0", 4446);
-            socket.joinGroup(socketAddress, NetworkInterface.getByName("en0"));
+            socket.joinGroup(socketAddress, NetworkInterface.getByInetAddress(socket.getLocalAddress()));
             while (isRunning) {
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);
@@ -34,7 +34,7 @@ public class MulticastListener extends Thread {
                     continue;
                 UserTable.Connect(userId, packet.getAddress().getHostAddress(), port);
             }
-            socket.leaveGroup(socketAddress, NetworkInterface.getByName("en0"));
+            socket.leaveGroup(socketAddress, NetworkInterface.getByInetAddress(socket.getLocalAddress()));
             socket.close();
         } catch (Exception e) {
             e.printStackTrace();
