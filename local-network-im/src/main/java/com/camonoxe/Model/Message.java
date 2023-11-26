@@ -46,7 +46,7 @@ public class Message implements Serializable {
     @Override
     public String toString()
     {
-        return String.format("%s\n[%s]\n%s\n", dateFormat.format(timestamp), UserTable.getUsernameByUserId(senderUUID), message);
+        return String.format("%s\n%s\n%s\n", dateFormat.format(timestamp), UserTable.getUsernameByUserId(senderUUID), message);
     }
 
 }

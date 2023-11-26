@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.UUID;
 
+import javax.swing.JOptionPane;
 import javax.websocket.DeploymentException;
 import org.glassfish.tyrus.server.Server;
 import com.camonoxe.Controller.ChatEndpoint;
@@ -30,6 +31,12 @@ public class App implements Runnable, SendMessageDel, SyncDel {
         port = findAvailablePort(8080, 20);
         String name = "Session" + (port - 8080 + 1);
         gui = new GUI(name, this, this);
+        String tempName = JOptionPane.showInputDialog("Enter desired username");
+        if (tempName != null && !tempName.isBlank()) 
+        {
+            name = tempName;
+            gui.setTitle(tempName);
+        }
         UserTable.setUsersChangedDel(gui, gui);
         UserTable.initLocalUser(name, UUID.randomUUID(), port);
     }

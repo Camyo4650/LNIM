@@ -72,10 +72,4 @@ public class ChatEndpoint {
                 break;
         }
     }
-
-    @OnClose
-    public void OnClose(Session session)
-    {
-        System.out.println("stupid");
-    }
 }

@@ -3,8 +3,10 @@ package com.camonoxe.View;
 //Home Page http://guigenie.cjb.net - Check often for new versions!
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -12,6 +14,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowStateListener;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 
@@ -35,8 +38,18 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultStyledDocument;
+import javax.swing.text.MutableAttributeSet;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
+import javax.swing.text.StyledDocument;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import com.camonoxe.Model.MessageLogs;
 import com.camonoxe.Model.SendMessageDel;
@@ -57,12 +70,37 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
     private SyncDel syncDel;
 
     private UUID userOnDisplay;
+    private SimpleAttributeSet readFont;    //            _________________
+    private SimpleAttributeSet unReadFont;  //           |                 |
+    private SimpleAttributeSet usFont;      // us..      |        /\       |
+    private SimpleAttributeSet themFont;    // and them..|   __--/  \==__  |
+                                            //           |_--   /____\  ==_|
+                                            //           |                 |                          
+                                            //           |                 |
+                                            //           |_________________|
 
     private boolean isAlive;
+    private StyledDocument document;
+    private Style usStyle;
+    private Style centerStyle;
+    private Style themStyle;
     
     private static final int CHAT_ROW_LIMIT = 4;
 
     public GUI(String name, SendMessageDel del, SyncDel del2) {
+        readFont = new SimpleAttributeSet();
+        StyleConstants.setForeground(readFont, new Color(0x000000));
+
+        usFont = new SimpleAttributeSet(readFont);
+        StyleConstants.setBold(usFont, true);
+        StyleConstants.setAlignment(usFont, StyleConstants.ALIGN_RIGHT);
+        themFont = new SimpleAttributeSet(readFont);
+        StyleConstants.setBold(themFont, false);
+        StyleConstants.setAlignment(themFont, StyleConstants.ALIGN_LEFT);
+
+        unReadFont = new SimpleAttributeSet(readFont);
+        StyleConstants.setForeground(unReadFont, new Color(0x00b300));
+
         sendMessageDel = del;
         syncDel = del2;
         participantsList = new DefaultListModel<>();
@@ -85,12 +123,9 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
 
             public void keyPressed(KeyEvent e)
             {
-                if (keysHeld.contains(e.getKeyCode())) return;
-                keysHeld.add(e.getKeyCode());
                 if (e.getKeyCode() == KeyEvent.VK_ENTER && e.getModifiersEx() != KeyEvent.SHIFT_DOWN_MASK)
                 {
                     e.consume();
-                    attemptSendMessage();
                 }
                 if (e.getKeyCode() == KeyEvent.VK_ENTER && e.getModifiersEx() == KeyEvent.SHIFT_DOWN_MASK)
                 {
@@ -99,6 +134,12 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
                             uxText.insert("\n", uxText.getCaretPosition());
                         }
                     });
+                }
+                if (keysHeld.contains(e.getKeyCode())) return;
+                keysHeld.add(e.getKeyCode());
+                if (e.getKeyCode() == KeyEvent.VK_ENTER && e.getModifiersEx() != KeyEvent.SHIFT_DOWN_MASK)
+                {
+                    attemptSendMessage();
                 }
             }
 
@@ -117,16 +158,28 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
 
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                if (participantsList.size() == 0 || uxParticipants.getSelectedIndex() == -1) return;
-                UserEnvelope ue = participantsList.get(uxParticipants.getSelectedIndex());
-                userOnDisplay = ue.getUser().getUserId();
-                NewMessageHandler(userOnDisplay);
+                if (!e.getValueIsAdjusting()) {
+                    if (participantsList.size() == 0 || uxParticipants.getSelectedIndex() == -1) return;
+                    UserEnvelope ue = participantsList.get(uxParticipants.getSelectedIndex());
+                    userOnDisplay = ue.getUser().getUserId();
+                    uxMessages.setText("");
+                    GetAllMessages();
+                }
             }
             
         });
         JScrollPane scrollParty = new JScrollPane(uxParticipants);
 
-        uxMessages = new JTextPane();
+        StyleContext styleContext = new StyleContext();
+        document = new DefaultStyledDocument(styleContext);
+        Style defaultStyle = styleContext.getStyle(StyleContext.DEFAULT_STYLE);
+        usStyle = styleContext.addStyle("us", defaultStyle);
+        centerStyle = styleContext.addStyle("center", defaultStyle);
+        themStyle = styleContext.addStyle("them", defaultStyle);
+        StyleConstants.setAlignment(usStyle, StyleConstants.ALIGN_RIGHT);
+        StyleConstants.setAlignment(centerStyle, StyleConstants.ALIGN_CENTER);
+        StyleConstants.setAlignment(themStyle, StyleConstants.ALIGN_LEFT);
+        uxMessages = new JTextPane(document);
         uxMessages.setEditable(false);
         uxText.setRows(CHAT_ROW_LIMIT);
         JScrollPane scrollMessages = new JScrollPane(uxMessages);
@@ -185,10 +238,26 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
     private void attemptSendMessage()
     {
         if (StringUtils.isBlank(uxText.getText())) return;
-        sendMessageDel.MessageHandler(userOnDisplay, uxText.getText());
+        if (userOnDisplay == null) {
+            uxMessages.setText("");
+            document.setLogicalStyle(document.getLength(), centerStyle);
+            try {
+                document.insertString(document.getLength(), "**NO CONVERSATION SELECTED**\n", null);
+            } catch (BadLocationException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            return;
+        }
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                getUserEnvByUserId(userOnDisplay).readMessages();
+                UserEnvelope ue = getUserEnvByUserId(userOnDisplay);
+                if (ue == null) {
+                    return;
+                }
+                ue.setMessagesCursor(uxMessages.getDocument().getLength() + uxText.getText().length() + 1);
+                sendMessageDel.MessageHandler(userOnDisplay, uxText.getText());
+                ue.readMessages();
                 uxText.setText("");
                 uxParticipants.validate();
                 uxParticipants.repaint();
@@ -219,15 +288,96 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
         return null;
     }
 
-    @Override
-    public void NewMessageHandler(UUID userId) {
-        if (userId != userOnDisplay)
-        {
-            refreshMessageBox(userId);
-        }
+    private void GetAllMessages()
+    {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                uxMessages.setText(String.join("\n", MessageLogs.getMessagesByUserId(userOnDisplay)));
+                Iterator<Pair<Boolean, String>> messages = MessageLogs.getMessagesByUserId(userOnDisplay);
+                UserEnvelope ue = getUserEnvByUserId(userOnDisplay);
+                MutableAttributeSet set = new SimpleAttributeSet();
+                try {
+                    document.setLogicalStyle(document.getLength(), centerStyle);
+                    document.insertString(document.getLength(), "**START OF CONVERSATION**\n\n", set);
+                    if (messages == null) return;
+                    while (messages.hasNext()) {
+                        Pair<Boolean, String> message = messages.next();
+                        colorChat(set, message, ue);
+                    }
+                } catch (BadLocationException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private void colorChat(MutableAttributeSet set, Pair<Boolean, String> message, UserEnvelope ue) throws BadLocationException
+    {
+        int num = 0;
+        String[] lines = message.getValue().split("\n");
+        for (String line : lines) {
+            if (message.getKey())
+            {
+                document.setLogicalStyle(document.getLength(), usStyle);
+            } else {
+                document.setLogicalStyle(document.getLength(), themStyle);
+            }
+            if (document.getLength() > ue.getMessagesCursor())
+            {
+                StyleConstants.setBold(set, true);
+            } else {
+                StyleConstants.setBold(set, false);
+            }
+            if (num == 0) 
+            {
+                StyleConstants.setForeground(set, new Color(0xaaaaaa));
+            } else if (num == 1) {
+                if (message.getKey())
+                {
+                    StyleConstants.setForeground(set, new Color(0xFF00FF));
+                } else {
+                    StyleConstants.setForeground(set, new Color(0x0000FF));
+                }
+            } else {
+                StyleConstants.setForeground(set, new Color(0x000000));
+            }
+            num++;
+            document.insertString(document.getLength(), line+"\n", set);
+        }
+        document.insertString(document.getLength(), "\n", set);
+    }
+
+    @Override
+    public void NewMessageHandler(UUID userId) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                Pair<Boolean, String> latestMessage = MessageLogs.getNewestMessageByUserId(userId);
+                UserEnvelope ue = getUserEnvByUserId(userId);
+                StyledDocument document = uxMessages.getStyledDocument();
+                MutableAttributeSet set = new SimpleAttributeSet();
+                try {
+                    if (latestMessage != null)
+                    {
+                        if (!latestMessage.getKey()) {
+                            refreshMessageBox(userId); // this is to let the user know that another user sent them a message (updates the icon)
+                        }
+                        if (userOnDisplay == null || (userOnDisplay != null && !userId.equals(userOnDisplay))) return;
+                        if (document.getLength() > ue.getMessagesCursor())
+                        {
+                            StyleConstants.setBold(set, true);
+                        } else {
+                            StyleConstants.setBold(set, false);
+                            document.setCharacterAttributes(0, document.getLength(), set, false);
+                        }
+                        colorChat(set, latestMessage, ue);
+                    } else {
+                        document.setLogicalStyle(document.getLength(), centerStyle);
+                        document.insertString(document.getLength(), "**START OF CONVERSATION**\n\n", set);
+                    }
+                } catch (BadLocationException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -259,6 +409,16 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 UserEnvelope ue = new UserEnvelope(user);
+                if (user.getUserId().equals(userOnDisplay))
+                {
+                    document.setLogicalStyle(document.getLength(), centerStyle);
+                    try {
+                        document.insertString(document.getLength(), "**END OF CONVERSATION**\n", null);
+                    } catch (BadLocationException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
                 participantsList.removeElement(ue);
                 uxParticipants.validate();
                 uxParticipants.repaint();
@@ -270,16 +430,20 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
 class UserEnvelope {
     private User user;
     private boolean newMessages;
+    private int messagesCursor; // this is so that new messages can render as a different font
 
     public UserEnvelope(User user)
     {
         this.user = user;
         newMessages = false;
+        messagesCursor = 0;
     }
 
     public void newMessages() { newMessages = true; }
     public void readMessages() { newMessages = false; }
     public boolean hasNewMessages() { return newMessages; }
+    public int getMessagesCursor() { return messagesCursor; }
+    public void setMessagesCursor(int cursor) { messagesCursor = cursor; }
 
     public User getUser() { return user; }
 
