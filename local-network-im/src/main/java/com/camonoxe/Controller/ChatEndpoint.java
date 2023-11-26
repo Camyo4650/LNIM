@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
+import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
@@ -70,5 +71,11 @@ public class ChatEndpoint {
             default:
                 break;
         }
+    }
+
+    @OnClose
+    public void OnClose(Session session)
+    {
+        System.out.println("stupid");
     }
 }

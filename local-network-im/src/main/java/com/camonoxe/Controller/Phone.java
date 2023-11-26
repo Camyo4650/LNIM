@@ -16,6 +16,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
 import org.glassfish.tyrus.client.ClientManager;
+import org.glassfish.tyrus.core.HandshakeException;
 
 import com.camonoxe.Model.Message;
 import com.camonoxe.Model.MessageLogs;
@@ -40,7 +41,16 @@ public class Phone {
     public Phone(URI uri) throws DeploymentException, IOException
     {
         this.uri = uri;
-        session = newSession();
+        boolean serverRunning = false;
+        do {
+            try {
+                session = newSession();
+                serverRunning = true;
+            } catch (DeploymentException e)
+            {
+                System.out.println("Failed to connect. Retrying...");
+            }
+        } while (!serverRunning);
         gson = new Gson();
     }
 

@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.nio.ByteBuffer;
+import java.util.Enumeration;
 import java.util.UUID;
 
 import javax.websocket.DeploymentException;
@@ -39,11 +41,11 @@ public class App implements Runnable, SendMessageDel, SyncDel {
     @Override
     public void run() {
         try {
+            new Thread(new MulticastListener()).start();
             multicastSend();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        new Thread(new MulticastListener()).start();
         System.out.println("Starting server...");
         runServer();
     }
