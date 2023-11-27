@@ -4,17 +4,17 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.util.Enumeration;
 import java.util.UUID;
 
 import javax.swing.JOptionPane;
 import javax.websocket.DeploymentException;
+
 import org.glassfish.tyrus.server.Server;
+
 import com.camonoxe.Controller.ChatEndpoint;
 import com.camonoxe.Controller.MulticastListener;
 import com.camonoxe.Model.SendMessageDel;
@@ -41,10 +41,10 @@ public class App implements Runnable, SendMessageDel, SyncDel {
         }
         UserTable.setUsersChangedDel(gui, gui);
         try {
-            final DatagramSocket socket = new DatagramSocket();
+            DatagramSocket socket = new DatagramSocket();
             socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
-            String ip = socket.getLocalAddress().getHostAddress();
             UserTable.initLocalUser(name, UUID.randomUUID(), socket.getLocalAddress(), port);
+            socket.close();
         } catch (UnknownHostException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
