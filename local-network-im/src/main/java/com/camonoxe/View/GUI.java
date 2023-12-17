@@ -7,6 +7,10 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.MenuItem;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -29,6 +33,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
@@ -70,14 +75,10 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
     private SyncDel syncDel;
 
     private UUID userOnDisplay;
-    private SimpleAttributeSet readFont;    //            _________________
-    private SimpleAttributeSet unReadFont;  //           |                 |
-    private SimpleAttributeSet usFont;      // us..      |        /\       |
-    private SimpleAttributeSet themFont;    // and them..|   __--/  \==__  |
-                                            //           |_--   /____\  ==_|
-                                            //           |                 |                          
-                                            //           |                 |
-                                            //           |_________________|
+    private SimpleAttributeSet readFont;    
+    private SimpleAttributeSet unReadFont;  
+    private SimpleAttributeSet usFont;      
+    private SimpleAttributeSet themFont;    
 
     private boolean isAlive;
     private StyledDocument document;
@@ -148,12 +149,41 @@ public class GUI extends JFrame implements UpdateMessagesDel, WindowStateListene
                 keysHeld.remove(e.getKeyCode());
             }
         });
+        
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        JPopupMenu uxParticipantsContext = new JPopupMenu();
+
+        JMenuItem copyIPaddr = new JMenuItem("Copy IP Address");
+        copyIPaddr.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                StringSelection selection = new StringSelection(getUserEnvByUserId(userOnDisplay).getUser().getIpAddress().getHostString());
+                clipboard.setContents(selection, selection);
+            }
+            
+        });
+        uxParticipantsContext.add(copyIPaddr);
+
+
+        JMenuItem copyUserN = new JMenuItem("Copy Username");
+        copyUserN.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                StringSelection selection = new StringSelection(getUserEnvByUserId(userOnDisplay).getUser().getUsername());
+                clipboard.setContents(selection, selection);
+            }
+            
+        });
+        uxParticipantsContext.add(copyUserN);
 
         uxParticipants = new JList<UserEnvelope>(participantsList);
         uxParticipants.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
         uxParticipants.setPreferredSize(new Dimension(200, 0));
         uxParticipants.setMinimumSize(new Dimension(200, 0));
         uxParticipants.setCellRenderer(new ClientCellRenderer());
+        uxParticipants.setComponentPopupMenu(uxParticipantsContext);
         uxParticipants.addListSelectionListener(new ListSelectionListener() {
 
             @Override
