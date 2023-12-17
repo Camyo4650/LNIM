@@ -4,15 +4,17 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.util.Enumeration;
 import java.util.UUID;
 
 import javax.swing.JOptionPane;
 import javax.websocket.DeploymentException;
+
 import org.glassfish.tyrus.server.Server;
+
 import com.camonoxe.Controller.ChatEndpoint;
 import com.camonoxe.Controller.MulticastListener;
 import com.camonoxe.Model.SendMessageDel;
@@ -38,7 +40,18 @@ public class App implements Runnable, SendMessageDel, SyncDel {
             gui.setTitle(tempName);
         }
         UserTable.setUsersChangedDel(gui, gui);
-        UserTable.initLocalUser(name, UUID.randomUUID(), port);
+        try {
+            DatagramSocket socket = new DatagramSocket();
+            socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+            UserTable.initLocalUser(name, UUID.randomUUID(), socket.getLocalAddress(), port);
+            socket.close();
+        } catch (UnknownHostException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (SocketException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -47,14 +60,8 @@ public class App implements Runnable, SendMessageDel, SyncDel {
 
     @Override
     public void run() {
-        try {
-            new Thread(new MulticastListener()).start();
-            multicastSend();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.out.println("Starting server...");
         runServer();
+        System.out.println("Starting server...");
     }
 
     public void multicastSend() throws IOException
@@ -73,12 +80,16 @@ public class App implements Runnable, SendMessageDel, SyncDel {
     }
 
     public void runServer() {
-        server = new Server("0.0.0.0", port, null, null, ChatEndpoint.class);
         try {
+            server = new Server("0.0.0.0", port, null, null, ChatEndpoint.class);
             server.start();
+            new Thread(new MulticastListener()).start();
+            multicastSend();
         } catch (DeploymentException e) {
             e.printStackTrace();
             return;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         while (gui.isAlive()) { // TODO make this do something
         }

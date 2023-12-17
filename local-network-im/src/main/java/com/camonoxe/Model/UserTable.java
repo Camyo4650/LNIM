@@ -6,7 +6,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -29,17 +28,13 @@ public class UserTable {
         updateMessagesDel = del2;
     }
 
-    public synchronized static void initLocalUser(String username, UUID userId, int port)
+    public synchronized static void initLocalUser(String username, UUID userId, InetAddress ip, int port)
     {
         if (localUser == null)
         {
-            try {
-                InetSocketAddress address = new InetSocketAddress(InetAddress.getLocalHost(), port);
-                localUser = new User(username, userId, null, address);
-                System.out.println(String.format("%s || %s || %s\n", username, userId, localUser.getIpAddress()));
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            }
+            InetSocketAddress address = new InetSocketAddress(ip, port);
+            localUser = new User(username, userId, null, address);
+            System.out.println(String.format("%s || %s || %s\n", username, userId, localUser.getIpAddress()));
         }
     }
 

@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
@@ -44,7 +43,6 @@ public class ChatEndpoint {
             case INIT:
                 @SuppressWarnings("unchecked")
                 HashMap<String, String> envelope = gson.fromJson(packet.getBody(), HashMap.class);
-                String username = UserTable.localUser().getUsername();
                 User user = gson.fromJson(envelope.get("User"), UserTable.User.class);
                 user.setIpAddress(envelope.get("IP"), Integer.parseInt(envelope.get("Port")));
                 if (!UserTable.isConnectedByUserId(user.getUserId()))

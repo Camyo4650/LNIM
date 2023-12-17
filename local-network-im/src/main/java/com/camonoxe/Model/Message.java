@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.UUID;
 
 public class Message implements Serializable {
-    private static final long serialversionUID = 182045809128905L;
     private UUID senderUUID;
     private String message;
     private Date timestamp;

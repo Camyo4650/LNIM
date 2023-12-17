@@ -43,7 +43,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.MutableAttributeSet;
@@ -60,7 +59,6 @@ import com.camonoxe.Model.MessageLogs;
 import com.camonoxe.Model.SendMessageDel;
 import com.camonoxe.Model.SyncDel;
 import com.camonoxe.Model.UpdateMessagesDel;
-import com.camonoxe.Model.UserTable;
 import com.camonoxe.Model.UserTable.User;
 import com.camonoxe.Model.UsersChangedDel;
 

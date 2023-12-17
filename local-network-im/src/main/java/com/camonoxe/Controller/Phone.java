@@ -16,7 +16,6 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
 import org.glassfish.tyrus.client.ClientManager;
-import org.glassfish.tyrus.core.HandshakeException;
 
 import com.camonoxe.Model.Message;
 import com.camonoxe.Model.MessageLogs;
